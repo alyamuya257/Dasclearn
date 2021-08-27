@@ -1,0 +1,698 @@
+---
+title: "DACSS 601 Final Project"
+author: "Alphoncina Lyamuya"
+date: "8/7/2021"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+    theme: lumen
+    toc_float: yes
+subtitle: Global Disparities in Internet Access
+bibliography: ref.bib
+biblio-style: apalike
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Internet access is one of the 21st-century essentials to almost all spheres of
+life. Despite the push to make the internet a public utility in most advanced
+economies as well as the 2016 UN General Assembly passage of a non-binding
+Resolution declaring "Internet access a human right", Internet access has
+remained uneven across the globe [@un_general_assembly_promotion_2016;
+@brendan_net-neutrality_2014]. The International Telecommunication Union (ITU)
+reported that by the end of 2016, there were 3.9 billion people that were not
+using the Internet [@international_telecommunication_union_ict_2016]. With a
+total population of 7.4 billion in 2016, this implies about 53% of the world's
+population was digitally excluded [@world_bank_world_nodate;
+@international_telecommunication_union_ict_2016]. When a significant portion of
+the population of the Global North countries has been reported as active
+Internet users, many in the Global South are digitally excluded. For instance,
+when only 21% of the European population was reported as non-users in 2016,
+about 75% of the population in Africa was still not using the Internet
+[@international_telecommunication_union_ict_2016].
+
+Most people access the internet through a certain kind of broadband connection.
+Also referred to as high-speed internet access, broadband includes the following
+types of connections: DSL (Digital Subscriber Line), fiber-optic, cable,
+satellite, and wireless [@federal_communications_commission_types_2014;
+@international_telecommunication_union_birth_2003)]. When DSL, fiber-optic,
+cable and satellite connections are categorized as fixed broadband, "wireless
+broadband can be mobile or fixed"
+[@federal_communications_commission_types_2014]. By 2017, there were about 7.75
+billion mobile broadband subscriptions and about 1.02 billion fixed broadband
+subscriptions [@world_bank_world_nodate]. With the Covid-19 pandemic and the
+ensued global shutdowns, access to reliable high-speed Internet has become more
+than ever important. From education, to health services, to jobs and the economy
+at large, fixed broadband internet has emerged as the cornerstone to social
+interactions, economic functionality, and even public health responses. But this
+has largely been relevant to those that can afford the cost of high-speed
+internet and live in regions or places with functioning Internet infrastructure.
+Given the growing need for high-speed Internet, the existing disparities in
+Internet access, and the socio-economic potential of fixed broadband connection,
+this study asks: to what extent does a country's per capita GDP corresponds to
+access to fixed broadband internet? I hypothesized that countries with higher
+per capita GDP are more likely to have well-established internet physical
+infrastructure as well as high access to percapelectity and high median income
+which allow most of their population to have access to fixed broadband Internet.
+The findings from this study would be useful in informing international
+policymakers and stakeholders in their effort to design effective measures to
+address different layers of the global digital divide.
+
+
+***
+
+## Data 
+
+The dataset used for this project is a compilation of several secondary datasets
+all from the [World Bank Open Data](https://data.worldbank.org). These datasets
+include data on fixed broadband subscriptions from 177 countries for the year
+2007 to 2017; data on per capita GDP from 177 countries for the year 2007 to
+2017; data on percapelectity access from 177 countries for the year 2007 to
+2017; data on population from 177 countries for the year 2007 to 2017; and data
+on cellular mobile subscriptions from 177 countries for the year 2007 to 2017.
+The compiled dataset included the following variable: *country* (name of the
+country), *year* (period covered in the data set, 2007-2017), *population*
+(total population of a country in a given year), *fixbroads* (fixed broadband
+subscriptions in a given year), *percapelect* (percapelectity access across a
+country in a given year), *gdpercap* (per capita GDP of a country in a given
+year), *mobsub* (cellular mobile subscriptions in a country). This dataset was
+then analyzed using R statistical software to examine the statistical
+relationship between the dependent variable (fixed broadband subscriptions) and
+independent variable (per capita GDP).
+
+
+### Import Data and Run Libraries
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+library(readr)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(psych)
+```
+
+<br>
+
+```{r}
+# Import the dataset 
+myData <- read.csv("newData.csv")
+myData1 <- myData
+
+# Snapshot of the dataset
+head(myData)
+
+# Description of the data
+glimpse(myData)
+
+```
+
+### Variable Description 
+
+The dependent variable (DV) fixed broadband subscription (`fixbroads`) represent
+total residential and organizational subscriptions to high-speed access to the
+Internet "at downstream speeds equal to, or greater than, 256 kbit/s. This
+includes cable modem, DSL, fiber-to-the-home/building, other fixed
+(wired)-broadband subscriptions, satellite broadband" (`World bank`).
+
+The independent variable (IV) per capita GDP (`gdpercap`) represents the gross
+domestic product per midyear population of a country in a given year.
+
+
+```{r}
+# Describing the variable 
+str(myData$fixbroads)
+str(myData$gdpercap)
+
+summary(myData$fixbroads)
+summary(myData$gdpercap)
+
+```
+
+
+### Data Cleaning and Transformation 
+
+```{r}
+# Check for missing values 
+table(is.na(myData))
+
+```
+
+<br>
+
+```{r echo=TRUE, results='hide'}
+# Examine the variables with missing values
+myData[rowSums(is.na(myData)) > 0, ]
+
+table(is.na(myData$aliteracy))
+```
+
+<br>
+
+* There are **103** missing values in the dataset `myData`. These missing values
+are found across `fixbroads`, `gdpercap`, `mobsub`, and `percapelect`. To avoid
+drawing inaccurate inference about the data, and given their relatively smaller
+size compared to the total values in the dataset, I will not remove existing
+missing values from the dataset.
+
+
+### Data Transformation
+
+Here some variable will be renamed, some new ones will be created, and the
+dataset will be arranged by names of countries (`country`).
+
+```{r}
+# Transforming variables
+myDataNew <- myData %>%
+  rename("country" = "country_name") %>%
+  mutate(percapfbroad = fixbroads/population, 
+         percapmobsub = mobsub/population,
+         percapelect = electric/population) %>%
+  arrange(country)
+
+head(myDataNew)
+
+```
+
+
+```{r}
+# Filtering data by year
+for (year in myDataNew){
+  filter2007 <- filter(myDataNew, year == 2007)
+  filter2008 <- filter(myDataNew, year == 2008)
+  filter2009 <- filter(myDataNew, year == 2009)
+  filter2010 <- filter(myDataNew, year == 2010)
+  filter2011 <- filter(myDataNew, year == 2011)
+  filter2012 <- filter(myDataNew, year == 2012)
+  filter2013 <- filter(myDataNew, year == 2013)
+  filter2014 <- filter(myDataNew, year == 2014)
+  filter2015 <- filter(myDataNew, year == 2015)
+  filter2016 <- filter(myDataNew, year == 2016)
+  filter2017 <- filter(myDataNew, year == 2017)
+} 
+
+```
+
+
+### Summary Description and Data Exploration
+
+After creating a variable `percapfbroad` (fixed broadband subscription (per 100
+people)) from the variable `fixbroads`, `percapfbroad` will be used as a DV
+throughout the rest of the analysis.
+
+```{r}
+options(scipen = 999, digits = 3)
+
+# Exploration of measures of central tendencies and distribution of the variable
+describe(myDataNew$percapfbroad)
+describe(myDataNew$gdpercap)
+
+# Visual distribution of the variables
+plot1a <- ggplot(data = myDataNew, mapping = aes(x = percapfbroad)) +
+  geom_histogram(fill = "chartreuse2", bins = 15, color = "white") +
+  labs(title = "Per Capita Fixed Broadband 
+       Subscriptions for 2007-2017",
+     caption = "Source:https://data.worldbank.org") 
+
+plot1b <- ggplot(data = myDataNew, mapping = aes(x = gdpercap)) +
+  geom_histogram(fill = "bisque3", bins = 15, color = "white") +
+  labs(title = "Per Capita GDP for 2007-2017",
+     caption = "Source:https://data.worldbank.org")
+
+# arrange the two plots above
+library(patchwork)
+
+plot1a + plot1b + plot_annotation(title = 
+"Histograms for Per Capita Fixed Broadband Subscriptions and Per Capita GDP", 
+                                tag_levels="a", tag_suffix = ")")
+
+```
+
+<br>
+
+To further explore the distribution of the two variables, `gdpercap` and
+`percapfbroad`, the filtered data based on individual year of observation will
+be explored. Given there are 11 sets of filtered data, the `filter2007`,
+`filtered2012`, and `filtered2017` datasets will be used as example to
+demonstrate the distribution of the DV and IV. 
+
+```{r}
+# 2007 data
+plot2a <- ggplot(data = filter2007, mapping = aes(x = percapfbroad)) +
+  geom_histogram(fill = "aquamarine2", bins = 15, color = "white") +
+  labs(title = "Per Capita Fixed Broadband 
+       Subscriptions for 2007",
+     caption = "Source:https://data.worldbank.org") 
+
+plot2b <- ggplot(data = filter2007, mapping = aes(x = gdpercap)) +
+  geom_histogram(fill = "bisque2", bins = 15, color = "white") +
+  labs(title = "Per Capita GDP for 2007",
+     caption = "Source:https://data.worldbank.org")
+
+plot2a + plot2b + plot_annotation(title = "Histograms 2007 Data (`filter2007`)", 
+                                tag_levels="a", tag_suffix = ")")
+
+
+# 2012 data
+plot3a <- ggplot(data = filter2012, mapping = aes(x = percapfbroad)) +
+  geom_histogram(fill = "aquamarine4", bins = 15, color = "white") +
+  labs(title = "Per Capita Fixed Broadband 
+       Subscriptions for 2012",
+     caption = "Source:https://data.worldbank.org") 
+
+plot3b <- ggplot(data = filter2012, mapping = aes(x = gdpercap)) +
+  geom_histogram(fill = "cornsilk4", bins = 15, color = "grey") +
+  labs(title = "Per Capita GDP for 2012",
+     caption = "Source:https://data.worldbank.org")
+
+plot3a + plot3b + plot_annotation(title = "Histograms 2012 Data (`filter2012`)", 
+                                tag_levels="a", tag_suffix = ")")
+
+
+# 2017 data 
+plot4a <- ggplot(data = filter2017, mapping = aes(x = percapfbroad)) +
+  geom_histogram(fill = "aquamarine3", bins = 15, color = "white") +
+  labs(title = "Per Capita Fixed Broadband 
+       Subscriptions for 2017",
+     caption = "Source:https://data.worldbank.org") 
+
+plot4b <- ggplot(data = filter2017, mapping = aes(x = gdpercap)) +
+  geom_histogram(fill = "cornsilk3", bins = 15, color = "grey") +
+  labs(title = "Per Capita GDP for 2017",
+     caption = "Source:https://data.worldbank.org")
+
+plot4a + plot4b + plot_annotation(title = "Histograms 2017 Data (`filter2017`)", 
+                                tag_levels="a", tag_suffix = ")")
+
+
+```
+
+
+***
+
+## Visualization 
+
+### Correlation and Regression Analysis 
+
+In this anaysis, I'm examining the statistical relationship between `gdpercap`
+(IV) and `percapfbroad` (DV). To further analyze how the two variables relate to
+one another, the filtered dataset by year would be examined to explore how over
+time the relationship between the two variable change. This will be useful at
+not only answering the research question but also to demonstrate the effect of
+time of the relationship between the IV and DV.
+
+Furthermore, other variables including `percapelect` and `percapmobsub` will be
+included in the some of the statistical models to examine whether these factors
+have a moderator effect on the relationship between the IV and the DV.
+
+
+This is the description of my null and alternative hypothesis:
+
+* H~0~ (*null hypothesis*): High per capita GDP does not correspond to a high
+per capita fixed broadband subscription in a country.
+
+* H~1~ (*alternative hypothesis*): High per capita GDP does correspond to a high
+per capita fixed broadband subscription in a country.
+
+
+```{r}
+options(scipen = 999, digits = 3)
+
+# Correlation 
+cor1 <- cor(myDataNew$gdpercap, myDataNew$percapfbroad, 
+            use="pairwise.complete.obs")
+cor1
+
+# Bivariate Regression 
+lm1 <- lm(percapfbroad ~ gdpercap, data = myDataNew)
+summary(lm1)
+
+# Plot the relationship
+plot(percapfbroad ~ gdpercap,
+       data = myDataNew, 
+       main = "Scatterplot of per Capita Fixed Broadband Subscriptions and 
+     per Capita GDP")
+
+# add the regression line 
+abline(lm1)
+
+```
+
+
+*For cor1*
+
+* There is a positive correlation of **0.766**. That is there is a positive
+relationship between per capita GDP and per capita fixed broadband subscription
+across countries.
+
+*For model lm(1)*
+
+* The p-value is less than 0.05. That is, the relationship between country's per
+capita GDP and per capita fixed broadband subscription is significant at 0.05
+level. Therefore, there is evidence to reject the null hypothesis for the
+alternative hypothesis at 0.05 level.
+
+***
+```{r}
+# Test the correlation or the filtered dataset for 2007, 2009, 2011, 2013, 2015,
+# and 2017
+
+(cor2 <- cor(filter2007$gdpercap, filter2007$percapfbroad, 
+            use="pairwise.complete.obs"))
+
+(cor3 <- cor(filter2009$gdpercap, filter2009$percapfbroad, 
+            use="pairwise.complete.obs"))
+
+(cor4 <- cor(filter2011$gdpercap, filter2011$percapfbroad, 
+            use="pairwise.complete.obs"))
+
+(cor5 <- cor(filter2013$gdpercap, filter2013$percapfbroad, 
+            use="pairwise.complete.obs"))
+
+(cor6 <- cor(filter2015$gdpercap, filter2015$percapfbroad, 
+            use="pairwise.complete.obs"))
+
+(cor7 <- cor(filter2017$gdpercap, filter2017$percapfbroad, 
+            use="pairwise.complete.obs"))
+
+```
+
+*For cor2*
+
+* There is a positive correlation of **0.833**. That is there is a positive
+relationship between per capita GDP and per capita fixed broadband subscription
+across countries.
+
+
+*For cor3*
+
+* There is a positive correlation of **0.837**. That is there is a positive
+relationship between per capita GDP and per capita fixed broadband subscription
+across countries.
+
+
+*For cor4*
+
+* There is a positive correlation of **0.777**. That is there is a positive
+relationship between per capita GDP and per capita fixed broadband subscription
+across countries.
+
+
+*For cor5*
+
+* There is a positive correlation of **0.761**. That is there is a positive
+relationship between per capita GDP and per capita fixed broadband subscription
+across countries.
+
+
+*For cor6*
+
+* There is a positive correlation of **0.765**. That is there is a positive
+relationship between per capita GDP and per capita fixed broadband subscription
+across countries.
+
+
+*For cor7*
+
+* There is a positive correlation of **0.752**. That is there is a positive
+relationship between per capita GDP and per capita fixed broadband subscription
+across countries.
+
+***
+
+```{r}
+# Regression for the filtered dataset for 2007, 2009, 2011, 2013, 2015, and 2017
+
+lm2 <- lm(percapfbroad ~ gdpercap, data = filter2007)
+summary(lm2)
+
+lm3 <- lm(percapfbroad ~ gdpercap, data = filter2009)
+summary(lm3)
+
+lm4 <- lm(percapfbroad ~ gdpercap, data = filter2011)
+summary(lm4)
+
+lm5 <- lm(percapfbroad ~ gdpercap, data = filter2013)
+summary(lm5)
+
+lm6 <- lm(percapfbroad ~ gdpercap, data = filter2015)
+summary(lm6)
+
+lm7 <- lm(percapfbroad ~ gdpercap, data = filter2017)
+summary(lm7)
+
+```
+
+```{r}
+# Test whether there is correlation between DV, IV, and other IVS
+lm8 <- lm(percapfbroad ~ gdpercap + percapelect, data = myDataNew)
+summary(lm8)
+
+lm9 <- lm(percapfbroad ~ gdpercap + percapelect + percapmobsub, data = myDataNew)
+summary(lm9)
+
+```
+
+
+*For model lm(2) to model lm(7)*
+
+* The p-value is less than 0.05. That is, the relationship between country's per
+capita GDP and per capita fixed broadband subscription is significant at 0.05
+level in the year 2007, 2009, 2011, 2013, 2015, 2017. Therefore, there is
+evidence to reject the null hypothesis for the alternative hypothesis at 0.05
+level.
+
+
+*For model lm(8)* 
+
+* `gdpercap`: The p-value is significant at 0.05 level.
+* `percapelect`: The p-value of ( 0.0067) is not statistically significant at
+0.05 level
+
+
+*For model lm(9)*
+
+* `gdpercap`: The p-value is significant at 0.05 level. 
+* `percapmobsub`: The p-value is significant at 0.05 level. 
+* `percapelect`: The p-value of (0.49090) is not statistically significant at
+0.05 level
+
+
+***
+
+
+### GG-Plot Data Visualization 
+
+```{r message=FALSE, warning=FALSE}
+# Scatterplot for `percapfbroad` and `gdpercap`
+plot5 <- filter2007 %>%
+  ggplot(mapping = aes(x = gdpercap, y = percapfbroad)) +
+  geom_point(color = "darkgoldenrod1") +
+  geom_smooth(method = "lm", color = "black", size = 0.5) +
+  labs(title = "per Capita GDP and per Capita Fixed 
+       Broadband for 2007")
+
+
+plot6 <- filter2011 %>%
+  ggplot(mapping = aes(x = gdpercap, y = percapfbroad)) +
+  geom_point(color = "darkolivegreen3") +
+  geom_smooth(method = "lm", color = "black", size = 0.5) +
+  labs(title = "per Capita GDP and per Capita Fixed 
+       Broadband for 2011")
+
+
+plot7 <- filter2015 %>%
+  ggplot(mapping = aes(x = gdpercap, y = percapfbroad)) +
+  geom_point(color = "darkgoldenrod") +
+  geom_smooth(method = "lm", color = "black", size = 0.5) +
+  labs(title = "per Capita GDP and per Capita Fixed 
+       Broadband for 2015")
+
+plot8 <- filter2017 %>%
+  ggplot(mapping = aes(x = gdpercap, y = percapfbroad)) +
+  geom_point(color = "darkseagreen4") +
+  geom_smooth(method = "lm", color = "black", size = 0.5) +
+  labs(title = "per Capita GDP and per Capita Fixed 
+       Broadband for 2017")
+
+# Arrange the plots 
+plot5 + plot6 + plot_annotation(title = "Scatterplots for 2007 and 2011 Data", 
+                                tag_levels="a", tag_suffix = ")",
+                                caption = "Source:https://data.worldbank.org")
+
+plot7 + plot8 + plot_annotation(title = "Scatterplots for 2015 and 2017 Data", 
+                                tag_levels="a", tag_suffix = ")",
+                                caption = "Source:https://data.worldbank.org")
+
+```
+
+
+
+***
+
+## Reflection 
+
+Going through the process of data collection and compilation not only helped me
+to learn and improve my analytical skills but also taught me to appreciate the
+work that goes behind any statistical analysis. Drawing from the dataset and
+some of the variables, there were several constraints. First, I had to
+reconstruct the dataset by compiling several datasets from the World Bank to
+have all my variables of interest in a single dataset. Second, the variable
+fixed broadband subscriptions included both residential and organizational
+subscriptions. This poses some challenges in analyzing the distribution of those
+subscriptions to understand how many households in a country had access to
+high-speed internet at their places of residence.
+
+Moving on to data wrangling and exploration, I encountered several challenges in
+variable transformation and in making analytical choices around the handling of
+observations across all 11 years. Given that I was using a panel dataset with
+data from 2007 to 2017, I wish I was able to perform some more advanced
+regression analysis to examine the effect of time on the relationship between my
+IV and DV.
+
+If I were to continue the project, I would examine the effect of fixed broadband
+internet on countries' economic growth and development. The dataset used in this
+project could also be useful in examining such an effect.
+
+
+***
+
+## Conclusion 
+
+In brief, this paper examined whether countries' per capita GDP influences
+people's access to fixed broadband internet. Data from 2007 to 2017 was used in
+the examination of this research question. To analyze whether per capita GDP
+(IV) had an influence on per capita fixed broadband subscriptions (DV) in a
+country, I run a correlation between the two variables based on the entire
+dataset with data from 2007 to 2017. I found a positive correlation of 0.776
+between the IV and DV. I went further to examine the relationship between the
+variable based on data from an individual year. Six correlations were run, and
+they all revealed a positive coefficient, indicating a positive relationship
+between per capita GDP and per capita fixed broadband subscription across the
+six years included. There was an incremental change in the correlation
+coefficient from 2007 to 2011, however, from 2011 to 2017 there was a
+decremental change in the correlation coefficient. Given that correlation does
+not mean causality, I went on to conduct linear regression analysis.
+
+For regression analysis, I run 9 linear regression models. While models (lm1),
+lm(8), and lm(9) used the large dataset with all 11 years of observations,
+models lm(2) to lm(7) were based on the filtered dataset with 177 observations
+in a particular year (2007, 2009, 2011, 2013, 2015, and 2017). For models lm(1)
+to lm(7), the p-values were less than 0.05. That is, the relationship between a
+country’s per capita GDP and per capita fixed broadband subscription was
+statistically significant at 0.05 level in the years 2007, 2009, 2011, 2013,
+2015, 2017 as well as the overall period between 2007 to 2017. Thus, there was
+evidence to reject the null hypothesis for the alternative hypothesis.
+
+In model lm(8), I regressed per capita fixed broadband subscription on per
+capita GDP and per capita electricity. While the p-values for per capita GDP was
+statistical significant at 0.05 level, that of per capita electricity was not
+statistically significant. In model lm(9), I regressed per capita fixed
+broadband subscription on per capita GDP, per capita electricity, and per capita
+cellular mobile subscription. When the p-values for both per capita GDP and per
+capita cellular mobile subscription were statistically significant at 0.05
+level, the p-value for per capita electricity was not statistically significant
+at 0.05 level. 
+
+The results from all regression models are summarized in the table below.
+
+
+### Model Summary 
+
+```{r}
+library(sjmisc)
+library(sjPlot)
+library(sjlabelled)
+
+tab_model(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9,
+          title= "Table 1. Linear Panel Regression Models of Fixed Broadband 
+          Internet Access",
+          dv.labels = c("lm1", "lm2", "lm3", "lm4", "lm5", "lm6", 
+                        "lm7", "lm8", "lm9"),
+          string.p = "P-Value",
+          show.ci = FALSE)
+
+ 
+```
+
+
+***
+
+## Reference
+
+
+Alam, T. F., Sultana, N., & Rayhan, M. I. (2019). Structural equation modeling:
+An application of broadband penetration and GDP growth in Asia. Journal of
+Economic Structures, 8(1), 1–11.
+https://ideas.repec.org/a/spr/jecstr/v8y2019i1d10.1186_s40008-019-0148-0.html
+
+Barry, J. (n.d.). COVID-19 exposes why access to the internet is a human right.
+OpenGlobalRights.
+https://www.openglobalrights.org/covid-19-exposes-why-access-to-internet-is-human-right/
+
+Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2021). dplyr: A
+Grammar of Data Manipulation. R package version 1.0.7.
+https://CRAN.R-project.org/package=dplyr
+
+International Telecommunication Union. (2017). ICT Facts and Figures 2017.
+https://about.fb.com/wp-content/uploads/2018/08/ICTFactsFigures2017.pdf
+
+Khandelwal, Saloni & Agarwal, Sonali. (n.d.). Application Of Fixed Broadband
+Subscriptions Impact On Economic Growth.
+https://doi.org/10.21203/rs.3.rs-60231/v1
+
+Lüdecke D (2018). “sjmisc: Data and Variable Transformation Functions.” _Journal
+of Open Source Software_, *3*(26), 754. doi: 10.21105/joss.00754 (URL:
+https://doi.org/10.21105/joss.00754).
+  
+Lüdecke D (2021). _sjPlot: Data Visualization for Statistics in Social Science_.
+R package version 2.8.9, <URL: https://CRAN.R-project.org/package=sjPlot>.
+
+Lüdecke D (2021). _sjlabelled: Labelled Data Utility Functions (Version 1.1.8)_.
+doi: 10.5281/zenodo.1249215 (URL: https://doi.org/10.5281/zenodo.1249215), <URL:
+https://CRAN.R-project.org/package=sjlabelled>.
+
+Lüdecke, D. (2021, July 10). Summary of Regression Models as HTML Table.
+https://cran.r-project.org/web/packages/sjPlot/vignettes/tab_model_estimates.html
+
+McDonough, Carol C. (2012, July 1). Fixed and mobile broadband: Demand and
+market structure. 23rd European Regional Conference of the International
+Telecommunications Society (ITS), Vienna, Austria.
+https://www.econstor.eu/bitstream/10419/60350/1/720272319.pdf
+
+Minges, M. (2015). Digital Dividends: Exploring the Relationship Between
+Broadband and Economic Growth.
+https://openknowledge.worldbank.org/bitstream/handle/10986/23638/WDR16-BP-Exploring-the-Relationship-between-Broadband-and-Economic-Growth-Minges.pdf;sequence=1
+
+Poushter, J. (2016, February 22). Internet access grows worldwide but remains
+higher in advanced economies. Pew Research Center.
+https://www.pewresearch.org/global/2016/02/22/internet-access-growing-worldwide-but-remains-higher-in-advanced-economies/
+
+Revelle, W. (2021) psych: Procedures for Personality and Psychological
+Research, Northwestern University, Evanston, Illinois, USA,
+https://CRAN.R-project.org/package=psych Version = 2.1.6,.
+
+Wempen, F. (2015). Different Types of Internet Connections—Dummies.
+https://www.dummies.com/education/internet-basics/different-types-of-internet-connections/
+
+Wickham, Hadley & Grolemund, Garrett. (2017). R for Data Science.
+https://r4ds.had.co.nz/index.html
+
+Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source
+Software, 4(43), 1686, https://doi.org/10.21105/joss.01686
+
+World Bank. (n.d). Fixed broadband subscriptions | Data Catalog. https://datacatalog.worldbank.org/fixed-broadband-subscriptions-1 
+
+
+
+
+
+
+
+
